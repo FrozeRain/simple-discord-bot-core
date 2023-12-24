@@ -6,6 +6,7 @@ import com.frozerain.sdbc.event.handler.EventHandler;
 import com.frozerain.sdbc.event.processor.EventProcessor;
 import com.frozerain.sdbc.event.filter.ProcessorEventFilter;
 import discord4j.core.event.domain.Event;
+import org.reflections.Configuration;
 import org.reflections.Reflections;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -21,11 +22,12 @@ public class SimpleEventHandler<T extends Event> implements EventHandler<T> {
     private ProcessorContext<T> context;
     private EventType type;
 
-    public SimpleEventHandler(EventType eventType, String processorPackage) {
+    public SimpleEventHandler(EventType eventType, Configuration processorPackage) {
+        System.out.println("Create handler for: " + eventType);
         this.init(eventType, processorPackage, null);
     }
 
-    public SimpleEventHandler(EventType eventType, String processorPackage, ProcessorEventFilter<T> filter) {
+    public SimpleEventHandler(EventType eventType, Configuration processorPackage, ProcessorEventFilter<T> filter) {
         this.init(eventType, processorPackage, filter);
     }
 
@@ -44,6 +46,7 @@ public class SimpleEventHandler<T extends Event> implements EventHandler<T> {
     @Override
     public Flux<Void> handleEvent(T event) {
         this.context.setEvent(event);
+        System.out.println("Handle event: " + event.getClass().getSimpleName() + ", processors amount: " + this.context.processors().size());
         return this.context.processors().isEmpty()
                 ? Flux.empty()
                 : Flux.fromStream(this.context.processors().stream())
@@ -77,14 +80,14 @@ public class SimpleEventHandler<T extends Event> implements EventHandler<T> {
 //        }
     }
 
-    private void init(EventType type, String processorPackage, ProcessorEventFilter<T> filter) {
+    private void init(EventType type, Configuration processorPackage, ProcessorEventFilter<T> filter) {
         this.context = new ProcessorContext<>(null);
         this.type = type;
         loadProcessors(type, processorPackage);
     }
 
     @SuppressWarnings("unchecked")
-    private void loadProcessors(EventType type, String processorPackage) {
+    private void loadProcessors(EventType type, Configuration processorPackage) {
         Reflections reflections = new Reflections(processorPackage);
         Set<Class<?>> types = reflections.getTypesAnnotatedWith(Processor.class);
 
@@ -100,6 +103,7 @@ public class SimpleEventHandler<T extends Event> implements EventHandler<T> {
                     continue;
                 }
                 if (newInstance instanceof EventProcessor<?>) {
+                    System.out.println(String.format("Load processor: %s", newInstance.getClass().getSimpleName()));
                     this.context.addProcessor((EventProcessor<T>) newInstance);
                 }
             }

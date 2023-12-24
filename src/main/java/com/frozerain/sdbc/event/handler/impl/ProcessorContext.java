@@ -36,7 +36,7 @@ class ProcessorContext<T extends Event> {
     }
 
     String getCurrentProcessorName() {
-        return this.currentProcessor.getClass().getName();
+        return this.currentProcessor.getClass().getSimpleName();
     }
 
     void setFilter(ProcessorEventFilter<T> filter) {
@@ -44,6 +44,11 @@ class ProcessorContext<T extends Event> {
     }
 
     boolean isEventApplicable(EventProcessor<T> processor) {
+        if (this.processorFilter == null) {
+            System.out.println("Filter event, filter is null");
+        } else {
+            System.out.println("Filter event, isApplicable: " + this.processorFilter.isApplicable(this.event, processor));
+        }
         return this.processorFilter == null || this.processorFilter.isApplicable(this.event, processor);
     }
 }
